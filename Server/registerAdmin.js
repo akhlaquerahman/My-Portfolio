@@ -21,8 +21,8 @@ const registerUser = async () => {
 
         const adminUser = await User.create({
             name: "Akhlaque Rahman",
-            email: "akhlaquerahman@18gmail.com",
-            password: "Akhlaque@123", // Password will be hashed by the model pre-save middleware
+            email: "fgdfgf",
+            password: "gffg", // Password will be hashed by the model pre-save middleware
             isAdmin: true,
         });
 
