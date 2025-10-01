@@ -14,13 +14,69 @@ const COLOR_MAP = {
 };
 
 const ICON_MAP = {
-    'HTML': '🌐', 'CSS': '🎨', 'React.js': '⚛️', 'Next.js': '🚀', 'JavaScript': '📜', 'Node.js': '🟢', 
-    'Express.js': '🚀', 'MongoDB': '🍃', 'Git': '🐙', 'Docker': '🐳',
-    'Python': '🐍', 'TensorFlow': '🧠', 'Scikit-learn': '🔬', 'Pandas': '🐼',
-    'AWS': '☁️', 'Vercel': '▲', 'Tailwind CSS': '💨', 'HTML5': '🌐',
-    'CSS3': '🎨', 'REST APIs': '🔗', 'MySQL': '🐬', 'C++': '⚡',
-    'Java': '☕', 'PHP': '🐘', 'C': '©️',
-    DEFAULT: '🛠️',
+    // Web & Frontend
+    'HTML': '🌐',
+    'CSS': '🎨',
+    'JavaScript': '📜',
+    'React.js': '⚛️',
+    'React Router': '🔗',
+    'Tailwind CSS': '💨',
+    'Bootstrap': '🅱️',
+
+    // Backend
+    'Node.js': '🟢',
+    'Express.js': '🚂',
+    'MongoDB': '🍃',
+    'Mongoose': '🍂',
+    'REST APIs': '🔗',
+    'MySQL': '🐬',
+    'Axios': '📡',
+    'Postman': '📮',
+    'JWT (JSON Web Tokens)': '🔐',
+    'Bcrypt.js': '🔑',
+    'Socket.io': '🟠',
+    'WebRTC': '📹',
+    'Twilio': '📞',
+    'Cloudinary': '☁️',
+
+    // Version Control & Deployment
+    'Git': '🐙',
+    'GitHub': '🐱',
+    'Vercel': '▲',
+    'Netlify': '🌐',
+    'Render': '🎬',
+    'Railway': '🚆',
+    'Docker': '🐳',
+    'AWS': '☁️',
+
+    // Programming Languages
+    'C': '©️',
+    'C++': '⚡',
+    'SQL': '🗄️',
+    'Python': '🐍',
+    'Java': '☕',
+    'PHP': '🐘',
+
+    // Python Libraries & AI/ML
+    'Numpy': '📊',
+    'Matplotlib': '📈',
+    'Pandas': '🐼',
+    'Scikit-learn': '🔬',
+    'NLP': '🗣️',
+    'Generative AI': '🤖',
+
+    // Soft Skills
+    'English Communication': '🗨️',
+    'Teamwork & Collaboration': '🤝',
+    'Problem-Solving & Critical Thinking': '🧠',
+    'Time Management & Productivity': '⏰',
+    'Adaptability & Flexibility': '🌱',
+    'Leadership & Ownership': '🏆',
+    'Emotional Intelligence (EQ)': '💡',
+    'Presentation & Public Speaking': '🎤',
+
+    // Default
+    DEFAULT: '🛠️',
 };
 
 // Helper function to process the new data format
