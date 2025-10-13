@@ -1,38 +1,60 @@
 const express = require('express');
 const router = express.Router();
-// 💡 Import Multer middleware
 const upload = require('../middleware/uploadMiddleware'); 
 
 const { 
-    getAccountInfo, updateAccountInfo,
-    getSkillSets, createSkillset, UpdateSkillSet, deleteSkillSet,
-    getPortfolioItems, createPortfolioItem, updatePortfolioItem, deletePortfolioItem
+    getAccountInfo, updateAccountInfo,
+    getSkillSets, createSkillset, UpdateSkillSet, deleteSkillSet,
+    getPortfolioItems, createPortfolioItem, updatePortfolioItem, deletePortfolioItem,
+
+    // --- 1. Naye controllers import karein ---
+    getExperiences, createExperience, updateExperience, deleteExperience,
+    getCertificates, createCertificate, updateCertificate, deleteCertificate
+
 } = require('../controllers/adminController');
 
-// Account and Bio Info Management (UPDATED for Profile Photo)
+// Account and Bio Info Management
 router.route('/info')
-    .get(getAccountInfo)
-    // 💡 Use upload.single('profileImage') to process the file named 'profileImage'
-    .put(upload.single('profileImage'), updateAccountInfo); 
+    .get(getAccountInfo)
+    .put(upload.single('profileImage'), updateAccountInfo); 
 
-// Skills Management (No change as no files are involved)
+// Skills Management
 router.route('/skills')
-    .get(getSkillSets)
-    .post(createSkillset); 
-    
+    .get(getSkillSets)
+    .post(createSkillset); 
+    
 router.route('/skills/:id')
-    .put(UpdateSkillSet) 
-    .delete(deleteSkillSet); 
+    .put(UpdateSkillSet) 
+    .delete(deleteSkillSet); 
 
-// Projects Management (UPDATED for Project Screenshot)
+// Projects Management
 router.route('/projects')
-    .get(getPortfolioItems)
-    // 💡 Use upload.single('projectScreenshot') for creation
-    .post(upload.single('projectScreenshot'), createPortfolioItem);
-    
+    .get(getPortfolioItems)
+    .post(upload.single('projectScreenshot'), createPortfolioItem);
+    
 router.route('/projects/:id')
-    // 💡 Use upload.single('projectScreenshot') for update
-    .put(upload.single('projectScreenshot'), updatePortfolioItem) 
-    .delete(deletePortfolioItem);
+    .put(upload.single('projectScreenshot'), updatePortfolioItem) 
+    .delete(deletePortfolioItem);
+
+// --- 2. Naye routes add karein ---
+
+// Experience Management
+router.route('/experiences')
+    .get(getExperiences)
+    .post(createExperience);
+
+router.route('/experiences/:id')
+    .put(updateExperience)
+    .delete(deleteExperience);
+
+// Certificates Management
+router.route('/certificates')
+    .get(getCertificates)
+    .post(createCertificate);
+    
+router.route('/certificates/:id')
+    .put(updateCertificate)
+    .delete(deleteCertificate);
+
 
 module.exports = router;

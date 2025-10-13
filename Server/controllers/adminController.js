@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const AccountInfo = require('../models/AccountInfo');
 const SkillSet = require('../models/SkillSet');
 const PortfolioItem = require('../models/PortfolioItem'); 
+const Certificate = require('../models/Certificate');
+const Experience = require('../models/Experience');
 const cloudinary = require('../config/cloudinaryConfig'); // 💡 Import Cloudinary
 
 // ===================================
@@ -234,16 +236,104 @@ const deletePortfolioItem = asyncHandler(async (req, res) => {
     res.json({ message: 'Project and associated image removed successfully' });
 });
 
+// =======================================================
+// --- EXPERIENCE (GET, ADD, UPDATE, DELETE) ---
+// =======================================================
 
+const getExperiences = asyncHandler(async (req, res) => {
+    const experiences = await Experience.find({}).sort({ createdAt: -1 }); // Sort by creation time
+    res.json(experiences);
+});
+
+const createExperience = asyncHandler(async (req, res) => {
+    const { title, company, startDate, endDate, description } = req.body;
+    if (!title || !company || !startDate || !endDate || !description) {
+        res.status(400);
+        throw new Error('All fields are required for experience.');
+    }
+    const experience = await Experience.create({ title, company, startDate, endDate, description });
+    res.status(201).json(experience);
+});
+
+const updateExperience = asyncHandler(async (req, res) => {
+    const experience = await Experience.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!experience) {
+        res.status(404);
+        throw new Error('Experience not found');
+    }
+    res.json(experience);
+});
+
+const deleteExperience = asyncHandler(async (req, res) => {
+    const experience = await Experience.findByIdAndDelete(req.params.id);
+    if (!experience) {
+        res.status(404);
+        throw new Error('Experience not found');
+    }
+    res.json({ message: 'Experience removed successfully' });
+});
+
+
+// =======================================================
+// --- CERTIFICATES (GET, ADD, UPDATE, DELETE) ---
+// =======================================================
+
+const getCertificates = asyncHandler(async (req, res) => {
+    const certificates = await Certificate.find({}).sort({ createdAt: -1 });
+    res.json(certificates);
+});
+
+const createCertificate = asyncHandler(async (req, res) => {
+    const { title, issuer, date, credentialURL, description } = req.body;
+    if (!title || !issuer || !date || !credentialURL) {
+        res.status(400);
+        throw new Error('Title, issuer, date, and URL are required for certificates.');
+    }
+    const certificate = await Certificate.create({ title, issuer, date, credentialURL, description });
+    res.status(201).json(certificate);
+});
+
+const updateCertificate = asyncHandler(async (req, res) => {
+    const certificate = await Certificate.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!certificate) {
+        res.status(404);
+        throw new Error('Certificate not found');
+    }
+    res.json(certificate);
+});
+
+const deleteCertificate = asyncHandler(async (req, res) => {
+    const certificate = await Certificate.findByIdAndDelete(req.params.id);
+    if (!certificate) {
+        res.status(404);
+        throw new Error('Certificate not found');
+    }
+    res.json({ message: 'Certificate removed successfully' });
+});
+
+
+// --- 3. Naye functions ko module.exports mein add karein ---
 module.exports = {
-    getAccountInfo,
-    updateAccountInfo,
-    getSkillSets,
-    createSkillset,
-    UpdateSkillSet,
-    deleteSkillSet,
-    getPortfolioItems,
-    createPortfolioItem,
-    updatePortfolioItem,
-    deletePortfolioItem
+    getAccountInfo,
+    updateAccountInfo,
+    getSkillSets,
+    createSkillset,
+    UpdateSkillSet,
+    deleteSkillSet,
+    getPortfolioItems,
+    createPortfolioItem,
+    updatePortfolioItem,
+    deletePortfolioItem,
+
+    // Experience Functions
+    getExperiences,
+    createExperience,
+    updateExperience,
+    deleteExperience,
+
+    // Certificate Functions
+    getCertificates,
+    createCertificate,
+    updateCertificate,
+    deleteCertificate,
 };

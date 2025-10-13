@@ -1,35 +1,48 @@
 // File: Profile.jsx (Admin Dashboard Main Component)
 import React, { useState, useEffect, useCallback } from 'react';
 import myPhoto from '../assets/my_photo.jpeg'; // Local fallback image
+
+// Sabhi tab components ko import karein
 import AboutContent from './tabs/AboutContent';
 import SkillsContent from './tabs/SkillsContent';
 import ProjectsContent from './tabs/ProjectsContent';
 import MessagesContent from './tabs/MessagesContent';
 import AccountContent from './tabs/AccountContent';
+import ExperienceContent from './tabs/ExperienceContent';     // Naya component import
+import CertificatesContent from './tabs/CertificateContent.jsx'; // Naya component import
 
-// VITE Environment Variable को एक्सेस करें
+
+// VITE Environment Variable ko access karein
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Tabs ki list ko update karein
 const tabs = [
     { id: 'About', label: 'Bio & Summary' },
+    { id: 'Experience', label: 'Experience (CRUD)' },
     { id: 'Skills', label: 'Skills & Tech Stack' },
     { id: 'Projects', label: 'Projects (CRUD)' },
+    { id: 'Certificates', label: 'Certificates (CRUD)' },
     { id: 'Messages', label: 'Contact Messages' },
     { id: 'Account', label: 'Personal Info 👤' },
 ];
 
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('About');
+    
+    // Sabhi sections ke liye state
     const [info, setInfo] = useState({});
     const [skills, setSkills] = useState([]);
     const [projects, setProjects] = useState([]);
-    const [messages, setMessages] = useState([]); 
+    const [messages, setMessages] = useState([]);
+    const [experiences, setExperiences] = useState([]);     // Naya state
+    const [certificates, setCertificates] = useState([]); // Naya state
+    
+    // UI states
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState(''); // Success message state
+    const [successMessage, setSuccessMessage] = useState('');
 
-    // --- 1. API Helper Function ---
-    // isFormData flag determines how Content-Type header is handled.
+    // API calls ke liye reusable function
     const handleApiCall = useCallback(async (url, method, body = null, isFormData = false) => {
         setError('');
         setSuccessMessage('');
@@ -38,29 +51,19 @@ const Profile = () => {
             
             if (body) {
                 if (isFormData) {
-                    // FormData के लिए Content-Type सेट नहीं किया जाता है
-                    options.body = body; 
+                    options.body = body;  
                 } else {
-                    // JSON data के लिए Content-Type सेट करें
                     options.headers['Content-Type'] = 'application/json';
                     options.body = JSON.stringify(body);
                 }
             }
             
-            // NOTE: Authentication token भेजने का logic यहाँ जोड़ें अगर route protected है:
-            // options.headers['Authorization'] = `Bearer ${YOUR_AUTH_TOKEN}`;
+            // Yahan Authentication token add kar sakte hain
+            // options.headers['Authorization'] = `Bearer ${YOUR_TOKEN}`;
 
             const response = await fetch(url, options);
             if (!response.ok) {
-                const contentType = response.headers.get("content-type");
-                let errorData = { message: `API call failed with status: ${response.status}` };
-                
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    errorData = await response.json();
-                } else {
-                     errorData.message = await response.text() || errorData.message;
-                }
-
+                const errorData = await response.json().catch(() => ({ message: `API call failed with status: ${response.status}` }));
                 throw new Error(errorData.message);
             }
             return response.json();
@@ -71,72 +74,63 @@ const Profile = () => {
         }
     }, []); 
 
-    // --- 2. Data Fetching Function ---
+    // Dashboard ka saara data fetch karne ke liye function
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            // NOTE: Production में fetch calls को handleApiCall के माध्यम से token के साथ भेजना बेहतर है
-            const [infoRes, skillsRes, projectsRes, messagesRes] = await Promise.all([
+            // Promise.all se sabhi API calls ek saath karein
+            const [infoRes, skillsRes, projectsRes, messagesRes, expRes, certRes] = await Promise.all([
                 fetch(`${API_URL}/api/admin/info`),
                 fetch(`${API_URL}/api/admin/skills`),
                 fetch(`${API_URL}/api/admin/projects`),
-                fetch(`${API_URL}/api/admin/messages`)
+                fetch(`${API_URL}/api/admin/messages`),
+                fetch(`${API_URL}/api/admin/experiences`),  // Experience data fetch
+                fetch(`${API_URL}/api/admin/certificates`), // Certificate data fetch
             ]);
 
-            const [infoData, skillsData, projectsData, messagesData] = await Promise.all([
+            const [infoData, skillsData, projectsData, messagesData, expData, certData] = await Promise.all([
                 infoRes.json(),
                 skillsRes.json(),
                 projectsRes.json(),
-                messagesRes.json()
+                messagesRes.json(),
+                expRes.json(),
+                certRes.json(),
             ]);
 
+            // Sabhi states ko update karein
             setInfo(infoData);
             setSkills(skillsData);
             setProjects(projectsData);
-            setMessages(messagesData); 
+            setMessages(messagesData);
+            setExperiences(expData);
+            setCertificates(certData);
 
         } catch (err) {
-            setError('Failed to fetch dashboard data. Ensure backend is running.');
+            setError('Failed to fetch dashboard data. Make sure the backend server is running.');
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, []); 
+    }, [API_URL]); 
 
     useEffect(() => {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
-    // --- 3. CRITICAL FIX: handleInfoUpdate (Using FormData) ---
+    // About/Info section ko update karne ke liye handler
     const handleInfoUpdate = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
-        setSuccessMessage('');
-
-        // 💡 FIX: Backend route पर Multer लगा है, इसलिए FormData का उपयोग ज़रूरी है।
         const formData = new FormData();
-
-        // info state के सभी text fields को FormData में append करें
         Object.keys(info).forEach(key => {
-            // Arrays या objects को छोड़ दें, या उन्हें JSON.stringify करके भेजें अगर backend accept करता है।
-            // यहाँ हम सिर्फ primitive values (text/number fields) भेज रहे हैं।
             if (info[key] !== null && typeof info[key] !== 'object') { 
                 formData.append(key, info[key]);
             }
         });
         
-        // profileImage field को भी append करें, भले ही वह खाली हो
-        formData.append('profileImage', null); 
-
-        const updatedData = await handleApiCall(
-            `${API_URL}/api/admin/info`, 
-            'PUT', 
-            formData, 
-            true // 💡 isFormData: true
-        );
-
+        const updatedData = await handleApiCall(`${API_URL}/api/admin/info`, 'PUT', formData, true);
+        
         if (updatedData) {
             setInfo(updatedData); 
             setSuccessMessage('Bio and summary updated successfully! ✅');
@@ -144,8 +138,7 @@ const Profile = () => {
         setLoading(false);
     };
 
-
-    // --- 4. Tab Content Rendering ---
+    // Active tab ke hisaab se component render karein
     const renderTabContent = () => {
         const commonProps = { 
             handleApiCall, 
@@ -154,17 +147,22 @@ const Profile = () => {
             setInfo,
             skills,
             projects,
-            messages
+            messages,
+            experiences,
+            certificates,
         };
 
         switch (activeTab) {
             case 'About':
-                // 💡 AboutContent को update handler पास करें
                 return <AboutContent {...commonProps} handleInfoUpdate={handleInfoUpdate} />; 
+            case 'Experience':
+                return <ExperienceContent {...commonProps} />;
             case 'Skills':
                 return <SkillsContent {...commonProps} />;
             case 'Projects':
                 return <ProjectsContent {...commonProps} />;
+            case 'Certificates':
+                return <CertificatesContent {...commonProps} />;
             case 'Messages':
                 return <MessagesContent {...commonProps} />;
             case 'Account':
@@ -188,6 +186,7 @@ const Profile = () => {
 
                 <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-8">
                     
+                    {/* Left Sidebar for Navigation */}
                     <div className="md:w-1/4">
                         <div className="flex items-center space-x-4 mb-8 border-b border-gray-700 pb-4">
                             <img 
@@ -198,7 +197,7 @@ const Profile = () => {
                             />
                             <div>
                                 <h2 className="text-xl font-bold">{info.name || 'Admin'}</h2>
-                                <p className="text-sm text-gray-400">MERN Stack Manager</p>
+                                <p className="text-sm text-gray-400">Portfolio Manager</p>
                             </div>
                         </div>
                         <nav>
@@ -213,7 +212,9 @@ const Profile = () => {
                                         >
                                             <span>{tab.label}</span>
                                             <span className="text-xs">
+                                                {tab.id === 'Experience' && `(${experiences.length})`}
                                                 {tab.id === 'Projects' && `(${projects.length})`}
+                                                {tab.id === 'Certificates' && `(${certificates.length})`}
                                                 {tab.id === 'Messages' && unreadMessageCount > 0 && 
                                                     <span className="bg-red-500 text-white font-bold px-2 py-0.5 rounded-full ml-2">{unreadMessageCount}</span>}
                                                 {tab.id === 'Messages' && unreadMessageCount === 0 && `(${messages.length})`}
@@ -225,6 +226,7 @@ const Profile = () => {
                         </nav>
                     </div>
                     
+                    {/* Main Content Area */}
                     <div className="md:w-3/4 bg-gray-900 p-8 rounded-xl shadow-inner border border-gray-700/50">
                         {renderTabContent()}
                     </div>

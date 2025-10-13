@@ -11,7 +11,7 @@ const Navbar = () => {
     const [activeSection, setActiveSection] = useState('hero');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const sections = ['hero', 'about', 'skills', 'projects', 'contact'];
+    const sections = ['hero', 'about', 'experience', 'skills', 'projects', 'certificates', 'contact'];
 
     // --- (Scroll and Link Classes functions remain the same) ---
     useEffect(() => {
@@ -102,7 +102,9 @@ const Navbar = () => {
                     <ul className="flex space-x-8">
                         <li><a href="#hero" className={getLinkClasses('hero')}>Home</a></li>
                         <li><a href="#about" className={getLinkClasses('about')}>About</a></li>
+                        <li><a href="#experience" className={getLinkClasses('experience')}>Experience</a></li>
                         <li><a href="#skills" className={getLinkClasses('skills')}>Skills</a></li>
+                        <li><a href="#certificates" className={getLinkClasses('certificates')}>Certificates</a></li>
                         <li><a href="#projects" className={getLinkClasses('projects')}>Projects</a></li>
                         <li><a href="#contact" className={getLinkClasses('contact')}>Contact</a></li>
                     </ul>
@@ -143,7 +145,9 @@ const Navbar = () => {
                 <ul className="flex flex-col space-y-4 text-center">
                     <li><a href="#hero" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Home</a></li>
                     <li><a href="#about" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">About</a></li>
+                    <li><a href="#experience" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Experience</a></li>
                     <li><a href="#skills" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Skills</a></li>
+                    <li><a href="#certificates" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Certificates</a></li>
                     <li><a href="#projects" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Projects</a></li>
                     <li><a href="#contact" onClick={toggleMenu} className="block py-2 text-white hover:text-cyan-400 transition-colors">Contact</a></li>
 
