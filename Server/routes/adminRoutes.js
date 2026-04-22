@@ -9,7 +9,10 @@ const {
 
     // --- 1. Naye controllers import karein ---
     getExperiences, createExperience, updateExperience, deleteExperience,
-    getCertificates, createCertificate, updateCertificate, deleteCertificate
+    getCertificates, createCertificate, updateCertificate, deleteCertificate, viewCertificate,
+    
+    // Resume Controllers
+    uploadResume, getResume, viewResume, downloadResume, deleteResume
 
 } = require('../controllers/adminController');
 
@@ -50,11 +53,22 @@ router.route('/experiences/:id')
 // Certificates Management
 router.route('/certificates')
     .get(getCertificates)
-    .post(createCertificate);
+    .post(upload.single('certificate'), createCertificate);
+
+router.get('/certificates/:id/view', viewCertificate);
     
 router.route('/certificates/:id')
-    .put(updateCertificate)
+    .put(upload.single('certificate'), updateCertificate)
     .delete(deleteCertificate);
+
+// Resume Management
+router.get('/resume/view', viewResume);
+router.get('/resume/download', downloadResume);
+
+router.route('/resume')
+    .get(getResume)
+    .post(upload.single('resume'), uploadResume)
+    .delete(deleteResume);
 
 
 module.exports = router;

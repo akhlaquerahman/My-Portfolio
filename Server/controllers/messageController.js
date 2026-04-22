@@ -2,26 +2,44 @@
 
 const asyncHandler = require('express-async-handler');
 const ContactMessage = require('../models/ContactMessage');
+const { sendContactEmail } = require('../utils/emailService');
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // @desc    Create a new contact message
 // @route   POST /api/messages (Public access)
 // @access  Public
 const createMessage = asyncHandler(async (req, res) => {
     const { name, email, subject, message } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
     // Validation
-    if (!name || !email || !subject || !message) {
+    if (!name || !normalizedEmail || !subject || !message) {
         res.status(400);
         throw new Error('Please fill all required fields: name, email, subject, and message.');
     }
 
+    // Email format validation
+    if (!emailRegex.test(normalizedEmail)) {
+        res.status(400);
+        throw new Error('Invalid email. Please enter a correct or valid email address.');
+    }
+
     const newMessage = await ContactMessage.create({
-        name,
-        email,
-        subject,
-        message,
+        name: name.trim(),
+        email: normalizedEmail,
+        subject: subject.trim(),
+        message: message.trim(),
         // isRead defaults to false (as defined in schema)
     });
+
+    // Send email notification
+    try {
+        await sendContactEmail(name.trim(), normalizedEmail, subject.trim(), message.trim());
+    } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't fail the request if email fails, but log the error
+    }
 
     // Send success response
     res.status(201).json({ 
@@ -75,7 +93,6 @@ const deleteMessage = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-    // NEW: Export the createMessage function
     createMessage,
     getMessages,
     updateMessageReadStatus,

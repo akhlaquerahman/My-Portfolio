@@ -1,4 +1,5 @@
 // Server/server.js
+const dns = require('dns');
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -7,6 +8,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const userRoutes = require('./routes/userRoutes');
 
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 dotenv.config();
 
 connectDB();

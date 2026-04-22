@@ -8,16 +8,19 @@ const CertificatesContent = ({ certificates, handleApiCall, fetchDashboardData }
         title: '',
         issuer: '',
         date: '',
-        credentialURL: '',
-        description: '', // 1. Naya description field state mein add kiya
+        description: '',
     };
     const [newCertificate, setNewCertificate] = useState(initialState);
+    const [certificateFile, setCertificateFile] = useState(null);
     const [editingCertificateId, setEditingCertificateId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const resetForm = () => {
         setNewCertificate(initialState);
+        setCertificateFile(null);
         setEditingCertificateId(null);
+        const fileInput = document.getElementById('certificateInput');
+        if (fileInput) fileInput.value = '';
     };
 
     const handleChange = (e) => {
@@ -27,11 +30,27 @@ const CertificatesContent = ({ certificates, handleApiCall, fetchDashboardData }
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+
+        if (!editingCertificateId && !certificateFile) {
+            alert('Please upload a certificate file.');
+            setIsSubmitting(false);
+            return;
+        }
         
         const method = editingCertificateId ? 'PUT' : 'POST';
         const url = editingCertificateId ? `${API_URL}/api/admin/certificates/${editingCertificateId}` : `${API_URL}/api/admin/certificates`;
+        const formData = new FormData();
+
+        formData.append('title', newCertificate.title);
+        formData.append('issuer', newCertificate.issuer);
+        formData.append('date', newCertificate.date);
+        formData.append('description', newCertificate.description);
+
+        if (certificateFile) {
+            formData.append('certificate', certificateFile);
+        }
         
-        const result = await handleApiCall(url, method, newCertificate, false);
+        const result = await handleApiCall(url, method, formData, true);
 
         if (result) {
             alert(`Certificate ${editingCertificateId ? 'updated' : 'added'} successfully!`);
@@ -47,9 +66,11 @@ const CertificatesContent = ({ certificates, handleApiCall, fetchDashboardData }
             title: cert.title,
             issuer: cert.issuer,
             date: cert.date,
-            credentialURL: cert.credentialURL,
-            description: cert.description || '', // 2. Edit ke time description ko bhi set kiya
+            description: cert.description || '',
         });
+        setCertificateFile(null);
+        const fileInput = document.getElementById('certificateInput');
+        if (fileInput) fileInput.value = '';
     };
 
     const handleDelete = async (id) => {
@@ -73,9 +94,21 @@ const CertificatesContent = ({ certificates, handleApiCall, fetchDashboardData }
                     <input name="issuer" value={newCertificate.issuer} onChange={handleChange} placeholder="Issuer (e.g., Udemy, Coursera)" required className="w-1/2 p-2 border rounded-md bg-gray-700 text-white" />
                     <input name="date" value={newCertificate.date} onChange={handleChange} placeholder="Date Issued (e.g., October 2025)" required className="w-1/2 p-2 border rounded-md bg-gray-700 text-white" />
                 </div>
-                <input name="credentialURL" value={newCertificate.credentialURL} onChange={handleChange} placeholder="Credential URL" required className="w-full p-2 border rounded-md bg-gray-700 text-white" />
+                <div className="space-y-2">
+                    <input
+                        id="certificateInput"
+                        type="file"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => setCertificateFile(e.target.files?.[0] || null)}
+                        className="w-full p-2 border rounded-md bg-gray-700 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
+                    />
+                    <p className="text-xs text-gray-400">
+                        {editingCertificateId
+                            ? 'Choose a new PDF or image only if you want to replace the current certificate file.'
+                            : 'Upload certificate as PDF or image.'}
+                    </p>
+                </div>
                 
-                {/* 3. Form mein naya textarea add kiya */}
                 <textarea
                     name="description"
                     value={newCertificate.description}
@@ -104,7 +137,7 @@ const CertificatesContent = ({ certificates, handleApiCall, fetchDashboardData }
                         <div className="flex-1">
                             <h5 className="font-bold text-white">{cert.title}</h5>
                             <p className="text-xs text-gray-400">by {cert.issuer} on {cert.date}</p>
-                            {/* 4. List mein description ko display kiya */}
+                            <p className="text-xs text-cyan-300 mt-1">{cert.fileName || 'certificate uploaded'}</p>
                             {cert.description && (
                                 <p className="text-sm text-gray-300 mt-2 whitespace-pre-wrap">{cert.description}</p>
                             )}

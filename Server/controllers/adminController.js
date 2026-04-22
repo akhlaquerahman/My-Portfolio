@@ -5,6 +5,7 @@ const PortfolioItem = require('../models/PortfolioItem');
 const Certificate = require('../models/Certificate');
 const Experience = require('../models/Experience');
 const cloudinary = require('../config/cloudinaryConfig'); // 💡 Import Cloudinary
+const { uploadFileToImageKit, deleteFileFromImageKit } = require('../utils/imagekitService');
 
 // ===================================
 // Helper Function for Cloudinary Upload
@@ -14,9 +15,12 @@ const uploadToCloudinary = async (fileBuffer, folderName) => {
     return new Promise((resolve, reject) => {
         // Convert buffer to data URI for Cloudinary stream upload
         const dataUri = `data:${fileBuffer.mimetype};base64,${fileBuffer.buffer.toString('base64')}`;
+        const isPdf = fileBuffer.mimetype === 'application/pdf';
 
         cloudinary.uploader.upload(dataUri, {
             folder: `portfolio/${folderName}`,
+            resource_type: isPdf ? 'raw' : 'image',
+            format: isPdf ? 'pdf' : undefined,
         }, (error, result) => {
             if (error) {
                 console.error("Cloudinary Upload Error:", error);
@@ -25,9 +29,37 @@ const uploadToCloudinary = async (fileBuffer, folderName) => {
             resolve({
                 url: result.secure_url,
                 publicId: result.public_id,
+                resourceType: result.resource_type,
             });
         });
     });
+};
+
+const deleteStoredResumeFile = async (resume) => {
+    if (!resume?.resumeFileId) {
+        return;
+    }
+
+    if (resume.resumeUrl && resume.resumeUrl.includes('res.cloudinary.com')) {
+        await cloudinary.uploader.destroy(resume.resumeFileId, { resource_type: 'raw' });
+        return;
+    }
+
+    await deleteFileFromImageKit(resume.resumeFileId);
+};
+
+const deleteStoredCertificateFile = async (certificate) => {
+    if (!certificate?.certificateFileId) {
+        return;
+    }
+
+    if (certificate.certificateUrl && certificate.certificateUrl.includes('res.cloudinary.com')) {
+        const resourceType = certificate.mimeType === 'application/pdf' ? 'raw' : 'image';
+        await cloudinary.uploader.destroy(certificate.certificateFileId, { resource_type: resourceType });
+        return;
+    }
+
+    await deleteFileFromImageKit(certificate.certificateFileId);
 };
 
 
@@ -284,31 +316,214 @@ const getCertificates = asyncHandler(async (req, res) => {
 });
 
 const createCertificate = asyncHandler(async (req, res) => {
-    const { title, issuer, date, credentialURL, description } = req.body;
-    if (!title || !issuer || !date || !credentialURL) {
+    const { title, issuer, date, description } = req.body;
+    if (!title || !issuer || !date) {
         res.status(400);
-        throw new Error('Title, issuer, date, and URL are required for certificates.');
+        throw new Error('Title, issuer, and date are required for certificates.');
     }
-    const certificate = await Certificate.create({ title, issuer, date, credentialURL, description });
+
+    if (!req.file) {
+        res.status(400);
+        throw new Error('Please upload a certificate file in PDF or image format.');
+    }
+
+    const uploadResult = req.file.mimetype === 'application/pdf'
+        ? await uploadFileToImageKit(req.file, '/portfolio/certificates')
+        : await uploadToCloudinary(req.file, 'certificates');
+
+    const certificate = await Certificate.create({
+        title,
+        issuer,
+        date,
+        description,
+        certificateUrl: uploadResult.url,
+        certificateFileId: uploadResult.fileId || uploadResult.publicId,
+        fileName: uploadResult.name || req.file.originalname,
+        mimeType: req.file.mimetype,
+    });
+
     res.status(201).json(certificate);
 });
 
 const updateCertificate = asyncHandler(async (req, res) => {
-    const certificate = await Certificate.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const certificate = await Certificate.findById(req.params.id);
     if (!certificate) {
         res.status(404);
         throw new Error('Certificate not found');
     }
-    res.json(certificate);
+
+    certificate.title = req.body.title || certificate.title;
+    certificate.issuer = req.body.issuer || certificate.issuer;
+    certificate.date = req.body.date || certificate.date;
+    certificate.description = req.body.description ?? certificate.description;
+
+    if (req.file) {
+        const uploadResult = req.file.mimetype === 'application/pdf'
+            ? await uploadFileToImageKit(req.file, '/portfolio/certificates')
+            : await uploadToCloudinary(req.file, 'certificates');
+
+        await deleteStoredCertificateFile(certificate);
+
+        certificate.certificateUrl = uploadResult.url;
+        certificate.certificateFileId = uploadResult.fileId || uploadResult.publicId;
+        certificate.fileName = uploadResult.name || req.file.originalname;
+        certificate.mimeType = req.file.mimetype;
+    }
+
+    const updatedCertificate = await certificate.save();
+    res.json(updatedCertificate);
+});
+
+const viewCertificate = asyncHandler(async (req, res) => {
+    const certificate = await Certificate.findById(req.params.id);
+
+    if (!certificate) {
+        return res.status(404).json({ message: 'Certificate not found' });
+    }
+
+    const response = await fetch(certificate.certificateUrl);
+
+    if (!response.ok) {
+        res.status(502);
+        throw new Error('Failed to fetch certificate from storage');
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', certificate.mimeType || response.headers.get('content-type') || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${certificate.fileName || 'certificate'}"`);
+    res.send(fileBuffer);
 });
 
 const deleteCertificate = asyncHandler(async (req, res) => {
-    const certificate = await Certificate.findByIdAndDelete(req.params.id);
+    const certificate = await Certificate.findById(req.params.id);
     if (!certificate) {
         res.status(404);
         throw new Error('Certificate not found');
     }
+
+    await deleteStoredCertificateFile(certificate);
+    await Certificate.deleteOne({ _id: certificate._id });
     res.json({ message: 'Certificate removed successfully' });
+});
+
+
+// ===================================
+// --- RESUME MANAGEMENT ---
+// ===================================
+
+const Resume = require('../models/Resume');
+
+const uploadResume = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        res.status(400);
+        throw new Error('Please upload a PDF file');
+    }
+
+    try {
+        if (req.file.mimetype !== 'application/pdf') {
+            res.status(400);
+            throw new Error('Resume must be a PDF file');
+        }
+
+        const result = await uploadFileToImageKit(req.file);
+        
+        // Delete old resume if exists
+        let oldResume = await Resume.findOne();
+        if (oldResume && oldResume.resumeFileId) {
+            await deleteStoredResumeFile(oldResume);
+            await Resume.deleteOne({ _id: oldResume._id });
+        }
+
+        // Create new resume record
+        const newResume = await Resume.create({
+            resumeUrl: result.url,
+            resumeFileId: result.fileId,
+            fileName: result.name || req.file.originalname
+        });
+
+        res.status(201).json({
+            message: 'Resume uploaded successfully!',
+            data: newResume
+        });
+    } catch (error) {
+        console.error('Resume upload error:', error);
+        res.status(500);
+        throw new Error('Failed to upload resume');
+    }
+});
+
+const getResume = asyncHandler(async (req, res) => {
+    const resume = await Resume.findOne();
+    
+    if (!resume) {
+        return res.status(404).json({ message: 'No resume found' });
+    }
+
+    res.json(resume);
+});
+
+const viewResume = asyncHandler(async (req, res) => {
+    const resume = await Resume.findOne();
+
+    if (!resume) {
+        return res.status(404).json({ message: 'No resume found' });
+    }
+
+    const response = await fetch(resume.resumeUrl);
+
+    if (!response.ok) {
+        res.status(502);
+        throw new Error('Failed to fetch resume from storage');
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${resume.fileName || 'resume.pdf'}"`);
+    res.send(fileBuffer);
+});
+
+const downloadResume = asyncHandler(async (req, res) => {
+    const resume = await Resume.findOne();
+
+    if (!resume) {
+        return res.status(404).json({ message: 'No resume found' });
+    }
+
+    const response = await fetch(resume.resumeUrl);
+
+    if (!response.ok) {
+        res.status(502);
+        throw new Error('Failed to fetch resume from storage');
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName || 'resume.pdf'}"`);
+    res.send(fileBuffer);
+});
+
+const deleteResume = asyncHandler(async (req, res) => {
+    const resume = await Resume.findOne();
+    
+    if (!resume) {
+        res.status(404);
+        throw new Error('No resume found to delete');
+    }
+
+    // Delete from storage
+    if (resume.resumeFileId) {
+        await deleteStoredResumeFile(resume);
+    }
+
+    await Resume.deleteOne({ _id: resume._id });
+
+    res.json({ message: 'Resume deleted successfully' });
 });
 
 
@@ -335,5 +550,13 @@ module.exports = {
     getCertificates,
     createCertificate,
     updateCertificate,
+    viewCertificate,
     deleteCertificate,
+
+    // Resume Functions
+    uploadResume,
+    getResume,
+    viewResume,
+    downloadResume,
+    deleteResume,
 };

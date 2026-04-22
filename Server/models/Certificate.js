@@ -14,9 +14,21 @@ const certificateSchema = mongoose.Schema(
             type: String,
             required: [true, 'Please add the issue date'],
         },
-        credentialURL: {
+        certificateUrl: {
             type: String,
-            required: [true, 'Please add the credential URL'],
+            required: [true, 'Please add the certificate file'],
+        },
+        certificateFileId: {
+            type: String,
+            required: [true, 'Certificate file ID is required'],
+        },
+        fileName: {
+            type: String,
+            default: 'certificate.pdf',
+        },
+        mimeType: {
+            type: String,
+            required: [true, 'Certificate mime type is required'],
         },
         description: {
             type: String,

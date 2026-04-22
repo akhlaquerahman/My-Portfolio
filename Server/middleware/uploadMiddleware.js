@@ -4,12 +4,14 @@ const multer = require('multer');
 // Configure multer storage (we only use it to handle file buffer/stream)
 const storage = multer.memoryStorage();
 
-// File filter to accept only images
+const ALLOWED_MIME_TYPES = new Set(['application/pdf']);
+
+// File filter to accept images and resume PDFs
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) {
+    if (file.mimetype.startsWith('image') || ALLOWED_MIME_TYPES.has(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Only images are allowed'), false);
+        cb(new Error('Only image files and PDF files are allowed'), false);
     }
 };
 

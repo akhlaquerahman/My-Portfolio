@@ -3,6 +3,7 @@ import { FaAward, FaExternalLinkAlt } from 'react-icons/fa';
 
 // API URL ko environment variable se lein
 const API_URL = import.meta.env.VITE_API_URL;
+const buildCertificateViewUrl = (id) => `${API_URL}/api/admin/certificates/${id}/view`;
 
 const CertificatesSection = () => {
     const [certificates, setCertificates] = useState([]);
@@ -73,7 +74,7 @@ const CertificatesSection = () => {
                             )}
                             
                             <a
-                                href={cert.credentialURL}
+                                href={buildCertificateViewUrl(cert._id)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-auto inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-2 px-5 rounded-lg hover:scale-105 transition-transform duration-300"

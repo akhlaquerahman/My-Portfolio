@@ -3,7 +3,6 @@
 const express = require('express');
 const router = express.Router();
 const { 
-    // NEW: Import the createMessage function
     createMessage,
     getMessages, 
     updateMessageReadStatus, 
@@ -13,7 +12,7 @@ const {
 // Public route for form submission
 router.route('/')
     .get(getMessages) 
-    .post(createMessage); // <-- NEW: Use POST for creating a new message
+    .post(createMessage);
 
 // Specific message (PUT to toggle read status, DELETE)
 router.route('/:id')
