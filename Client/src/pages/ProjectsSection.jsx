@@ -56,10 +56,18 @@ const ProjectsSection = () => {
   }, []); 
 
   // --- Filtering Logic ---
-  const filteredProjects = filter === 'all' 
-    ? projects 
-    : projects.filter(project => project.category === filter);
-
+  const filteredProjects = (() => {
+    let filtered = filter === 'all' 
+      ? projects 
+      : projects.filter(project => project.category === filter);
+    
+    // Separate featured and non-featured projects
+    const featured = filtered.filter(p => p.featured).reverse();
+    const nonFeatured = filtered.filter(p => !p.featured).reverse();
+    
+    // Show featured projects at the top, then new projects
+    return [...featured, ...nonFeatured];
+  })();
   if (loading) {
     return (
       <section id="projects" className="bg-slate-900 text-white min-h-screen py-16 px-4 md:px-8 relative overflow-hidden">
