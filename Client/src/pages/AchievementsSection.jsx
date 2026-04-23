@@ -36,7 +36,7 @@ const AchievementsSection = ({ stats }) => {
           <div className="group hover:scale-110 transition-all duration-300 bg-slate-700/50 rounded-xl p-4 hover:bg-slate-700/80 border border-slate-600/50 hover:border-cyan-400/50">
             <div className="text-3xl mb-2">🏆</div>
             <h4 className="text-2xl md:text-3xl font-bold text-cyan-400 mb-2 group-hover:text-cyan-300">{hackathon}+</h4>
-            <p className="text-gray-300 text-xs font-medium">Hackathons</p>
+            <p className="text-gray-300 text-xs font-medium">Hackathons Participate</p>
           </div>
           
           {/* Certificates */}
